@@ -27,7 +27,8 @@ detectarColision:
         beq colisionCabeza
 
         colisionEspacio:
-            mov r11, #0
+            mov r12, #'*'
+	    mov r11, #0
             b finDetectarColision
 
         colisionMuro:
