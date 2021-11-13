@@ -10,9 +10,6 @@
 
     mostrarMensajeLeerDatos:
         .fnstart
-            /*Parametros inputs:*/
-            /*r0=puntero al string que queremos imprimir*/
-            /*r1=longitud de lo que queremos imprimir*/
             ldr r1, =mensajeLeerDatos
             ldr r2, =longitudMensajeLeerDatos
             mov r7, #4 /*escribo  */
