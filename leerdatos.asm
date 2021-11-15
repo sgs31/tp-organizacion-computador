@@ -60,14 +60,12 @@
 		mov r10, #0	@ Caracter a recorrer
 		mov r11, #0	@ Contador
 
-		/* ldr r1, =cadena1	@ cargo la direccion de cadena1 */
 		bl longitudCad		@ en r2 tenemos la longitud de cadena1
 
 		cicloConvertir:
 			cmp r11, r2		@ comparo el contador con la longitud de cadena
 			beq finConvertir
 			add r11, #1		@ aumento el contador
-			/* ldr r1, =cadena1	@ cargo la direccion de cadena1 */
 			add r1, r2		@ me desplazo al caracter nulo
 			sub r1, r11		@ retrocedo al caracter necesario
 			ldrb r10, [r1]	@ cargar en r10 el caracter que estoy recorriendo
