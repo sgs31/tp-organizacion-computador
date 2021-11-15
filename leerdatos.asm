@@ -1,83 +1,130 @@
 .data
-    mensajeLeerDatos: .ascii "Ingrese un valor entre 1-9 para el desplazamiento y para la pendiente separados por una ',' y finalizado con ';'. Ejemplo: 2,5; \n"
-    longitudMensajeLeerDatos= . - mensajeLeerDatos
-    datos: .ascii "1,3;"
+
+    mensajeX: .ascii "Ingrese un X\n"
+    longitudMensajeX= . - mensajeX
+    xEnAsci: .ascii "     "
+
+    mensajePendiente: .ascii "Ingrese una pendiente\n"
+    longitudMensajePendiente= . - mensajePendiente
+    pendienteEnAsci: .ascii "     "
 
     x: .word 0
     pendiente: .word 0
 
 .text
 
-    mostrarMensajeLeerDatos:
+    /* r1 recibe que mensaje y r2 la longitud del mensaje */
+    mostrarMensaje:
         .fnstart
-            ldr r1, =mensajeLeerDatos
-            ldr r2, =longitudMensajeLeerDatos
-            mov r7, #4 /*escribo  */
-            mov r0, #1 /*stdout pantalla*/
-            swi 0    /* SWI, Software interrup*/
-            bx lr /*salimos de la funcion mifuncion*/
+            mov r7, #4
+            mov r0, #1
+            swi 0
+            bx lr
         .fnend
 
-    leerdatos:
+    /* en r1, recibe donde se guarda la cadena a ingresar */
+    leerTecla:
         .fnstart
-            push {lr, r1, r2, r3}
-            ldr r1, =mensajeLeerDatos
-            ldr r2, =longitudMensajeLeerDatos
-            bl mostrarMensajeLeerDatos
-            pop {lr, r1, r2, r3}
+            mov r7, #3
+            mov r0, #0
+            mov r2, #4
+            swi 0   
+            ldr r0, [r1]
             bx lr
         .fnend
     
-    /* Convertir recibe por r8 el ascii y lo pasa a decimal */
-    convertir:
-        .fnstart
-            sub r8, #48
-            bx lr
-        .fnend
+    /* en r1 recibe la direccion y en r2 devuelve la longitud */
+    longitudCad:
+	    .fnstart
+            push {r1, r4}
+            mov r2, #0     @ inicializo contador
+            cicloLongCad:
+                ldrb r4, [r1]   @ obtengo primer caracter de la cadena
+                cmp r4, #' '
+                beq salirLongCad
+                add r1, #1 	
+                add r2, #1
+                bal cicloLongCad
+            salirLongCad:
+                pop {r1, r4}
+                bx lr
+	    .fnend
+
+    /* recibe en r1 una direccion de cadena */
+    convertirAscii2Integer:
+	.fnstart
+        push {lr}
+		mov r0, #1	@ Unidad, decena, centena, etc...
+		mov r5, #10     @ Base
+		mov r8, #0	@ Numero de destino
+		mov r10, #0	@ Caracter a recorrer
+		mov r11, #0	@ Contador
+
+		/* ldr r1, =cadena1	@ cargo la direccion de cadena1 */
+		bl longitudCad		@ en r2 tenemos la longitud de cadena1
+
+		cicloConvertir:
+			cmp r11, r2		@ comparo el contador con la longitud de cadena
+			beq finConvertir
+			add r11, #1		@ aumento el contador
+			/* ldr r1, =cadena1	@ cargo la direccion de cadena1 */
+			add r1, r2		@ me desplazo al caracter nulo
+			sub r1, r11		@ retrocedo al caracter necesario
+			ldrb r10, [r1]	@ cargar en r10 el caracter que estoy recorriendo
+
+			sub r10, #0x30  @ le resto lo necesario para transformar ascii->num
+			mul r10, r0     @ multiplico al numero para ubicarlo en la posicion
+			add r8, r10     @ lo sumo al numero que ya venia teniendo
+
+			mul r0, r5      @ "desplazo" el 1 hacia izquierda, 1, 10, 100 
+
+			bal cicloConvertir
+
+		finConvertir:
+            pop {lr}
+			bx lr
+	.fnend
 
     cargarDatos:
         .fnstart
             push {lr, r2, r3, r4, r5, r6, r8}
-                /* Me traigo las direcciones de memoria */
-                ldr r2, =x 
-                ldr r3, =pendiente
-                ldr r5, =datos
-                
-                mov r4, #0 /* r4 con motivos de ser un acumulador y luego dejar en memoria lo que corresponda */
+            
+            ldr r1, =xEnAsci
+            bl convertirAscii2Integer
+            ldr r11, =x
+            str r8, [r11]
 
-                cargarDatosCiclo:
-                    ldrb r6, [r5] /* cargo los ascii en r6 */
-                    cmp r6, #';' /* nos fijamos si es el fin de la cadena */
-                    beq cargarDatosCambioEnPendiente 
-                    cmp r6, #',' /* nos fijamos si es la separacion de la x y la pendiente que se ingreso */
-                    beq cargarDatosCambioEnX
-                    mov r8, r6 /* dejo en r8 lo que hay en r6 */
-                    bl convertir
-                    add r4, r8
-                    add r5, #1
-                    b cargarDatosCiclo
-
-                cargarDatosCambioEnX:
-                    str r4, [r2]
-                    mov r4, #0
-                    add r5, #1
-                    b cargarDatosCiclo
-
-                cargarDatosCambioEnPendiente:
-                    str r4, [r3]
-                    pop {lr, r2, r3, r4, r5, r6, r8}
-                    bx lr
+            ldr r1, =pendienteEnAsci
+            bl convertirAscii2Integer
+            ldr r11, =pendiente
+            str r8, [r11]
+            
+            pop {lr, r2, r3, r4, r5, r6, r8}
+            bx lr
         .fnend
 
     
 
 .global main
 main:
+    
+    /* Primer bloque para cargar X en ascii */
+    ldr r1, =mensajeX
+    ldr r2, =longitudMensajeX
+    bl mostrarMensaje
+    ldr r1, =xEnAsci
+    bl leerTecla
 
-    
-    bl mostrarMensajeLeerDatos
+    /* Segundo bloque para cargar la Pendiente en ascii */
+    ldr r1, =mensajePendiente
+    ldr r2, =longitudMensajePendiente
+    bl mostrarMensaje
+    ldr r1, =pendienteEnAsci
+    bl leerTecla
+
+    /* Cargar datos llena las variables x y pendiente con integers */
     bl cargarDatos
-    
+            
     ldr r1, =x
     ldr r1, [r1]
 
