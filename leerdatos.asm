@@ -83,6 +83,25 @@
 			bx lr
 	.fnend
 
+    resetXyPendiente:
+        .fnstart
+            mov r5, #' '
+            mov r2, #5
+            ldr r3, =xEnAsci
+            ldr r4, =pendienteEnAsci
+            resetXyPendienteCiclo:
+            cmp r2, #0
+            beq resetXyPendienteSalir
+            strb r5, [r3]
+            strb r5, [r4]
+            add r3, #1
+            add r4, #1
+            sub r2, #1
+            b resetXyPendienteCiclo
+            resetXyPendienteSalir:
+            bx lr
+        .fnend
+
     cargarDatos:
         .fnstart
             push {lr, r2, r3, r4, r5, r6, r8}
@@ -100,35 +119,53 @@
             pop {lr, r2, r3, r4, r5, r6, r8}
             bx lr
         .fnend
+    
+    secuencia:
+        .fnstart
+            push {lr}
+
+            bl resetXyPendiente
+
+            /* Primer bloque para cargar X en ascii */
+            ldr r1, =mensajeX
+            ldr r2, =longitudMensajeX
+            bl mostrarMensaje
+            ldr r1, =xEnAsci
+            bl leerTecla
+
+            /* Segundo bloque para cargar la Pendiente en ascii */
+            ldr r1, =mensajePendiente
+            ldr r2, =longitudMensajePendiente
+            bl mostrarMensaje
+            ldr r1, =pendienteEnAsci
+            bl leerTecla
+
+            /* Cargar datos llena las variables x y pendiente con integers */
+            bl cargarDatos
+            pop {lr}
+            bx lr
+        .fnend
 
     
 
 .global main
 main:
     
-    /* Primer bloque para cargar X en ascii */
-    ldr r1, =mensajeX
-    ldr r2, =longitudMensajeX
-    bl mostrarMensaje
-    ldr r1, =xEnAsci
-    bl leerTecla
-
-    /* Segundo bloque para cargar la Pendiente en ascii */
-    ldr r1, =mensajePendiente
-    ldr r2, =longitudMensajePendiente
-    bl mostrarMensaje
-    ldr r1, =pendienteEnAsci
-    bl leerTecla
-
-    /* Cargar datos llena las variables x y pendiente con integers */
-    bl cargarDatos
-            
+    bl secuencia
+           
     ldr r1, =x
     ldr r1, [r1]
 
     ldr r2, =pendiente 
     ldr r2, [r2]
 
+    bl secuencia
+
+    ldr r1, =x
+    ldr r1, [r1]
+
+    ldr r2, =pendiente 
+    ldr r2, [r2]
 
     mov r7, #1
     swi 0
